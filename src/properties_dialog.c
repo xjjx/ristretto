@@ -398,6 +398,58 @@ rstto_properties_dialog_get_property (
 }
 
 static void
+get_exif(
+        	RsttoPropertiesDialog *dialog,
+		RsttoFile* file,
+		int exif_tag,
+		int i )
+{
+	ExifEntry* exif_entry = rstto_file_get_exif ( file, exif_tag );
+	if (NULL == exif_entry)
+		return;
+
+	gchar exif_data[EXIF_DATA_BUFFER_SIZE];
+	exif_entry_get_value (exif_entry, exif_data, EXIF_DATA_BUFFER_SIZE);
+
+	ExifIfd exif_ifd = exif_entry_get_ifd (exif_entry);
+	const gchar *exif_title = exif_tag_get_title_in_ifd ( exif_tag, exif_ifd );
+
+	gchar *label_string = g_strdup_printf(_("<b>%s:</b>"), exif_title);
+
+	GtkWidget *exif_label = gtk_label_new (NULL);
+
+	gtk_label_set_markup ( GTK_LABEL (exif_label), label_string);
+	g_free (label_string);
+
+	gtk_misc_set_alignment ( GTK_MISC (exif_label), 1.0, 0.5 );
+	gtk_table_attach (
+		GTK_TABLE (dialog->priv->image_table),
+		exif_label,
+		0,
+		1,
+		i,
+		i+1,
+		GTK_SHRINK | GTK_FILL,
+		GTK_SHRINK,
+		4,
+		4);
+
+	GtkWidget *exif_content_label = gtk_label_new (NULL);
+	gtk_label_set_text ( GTK_LABEL (exif_content_label), exif_data );
+	gtk_table_attach (
+		GTK_TABLE (dialog->priv->image_table),
+		exif_content_label,
+		1,
+		2,
+		i,
+		i+1,
+		GTK_EXPAND | GTK_FILL,
+		GTK_SHRINK,
+		4,
+		4);
+}
+
+static void
 properties_dialog_set_file (
         RsttoPropertiesDialog *dialog,
         RsttoFile *file)
@@ -414,14 +466,6 @@ properties_dialog_set_file (
     gchar *thumbnail_path;
     GdkPixbuf *pixbuf;
 
-    ExifEntry   *exif_entry = NULL;
-    ExifIfd      exif_ifd;
-    const gchar *exif_title = NULL;
-    gchar        exif_data[EXIF_DATA_BUFFER_SIZE];
-
-    gchar       *label_string;
-    GtkWidget   *exif_label;
-    GtkWidget   *exif_content_label;
     gint i;
 
     GList *children = NULL;
@@ -533,96 +577,22 @@ properties_dialog_set_file (
             }
             for (i = 0; i < EXIF_PROP_COUNT; ++i)
             {
-                label_string = NULL;
-                exif_data[0] = '\0';
                 switch (i)
                 {
                     case EXIF_PROP_DATE_TIME:
-                        exif_entry  = rstto_file_get_exif ( file, EXIF_TAG_DATE_TIME );
-                        if (NULL != exif_entry)
-                        {
-                            exif_entry_get_value (exif_entry, exif_data, EXIF_DATA_BUFFER_SIZE);
-                            label_string = g_strdup_printf(_("<b>Date taken:</b>"));
-                        }
+			get_exif( dialog, file, EXIF_TAG_DATE_TIME, i );
                         break;
                     case EXIF_PROP_MODEL:
-                        exif_entry  = rstto_file_get_exif ( file, EXIF_TAG_MODEL);
-                        if (NULL != exif_entry)
-                        {
-                            exif_entry_get_value (exif_entry, exif_data, EXIF_DATA_BUFFER_SIZE);
-                            exif_ifd = exif_entry_get_ifd (exif_entry);
-                            exif_title = exif_tag_get_title_in_ifd (
-                                    EXIF_TAG_MODEL,
-                                    exif_ifd);
-                            label_string = g_strdup_printf(_("<b>%s</b>"), exif_title);
-                        }
+			get_exif( dialog, file, EXIF_TAG_MODEL, i );
                         break;
                     case EXIF_PROP_MAKE:
-                        exif_entry  = rstto_file_get_exif ( file, EXIF_TAG_MAKE);
-                        if (NULL != exif_entry)
-                        {
-                            exif_entry_get_value (exif_entry, exif_data, EXIF_DATA_BUFFER_SIZE);
-                            exif_ifd = exif_entry_get_ifd (exif_entry);
-                            exif_title = exif_tag_get_title_in_ifd (
-                                    EXIF_TAG_MAKE,
-                                    exif_ifd);
-                            label_string = g_strdup_printf(_("<b>%s</b>"), exif_title);
-                        }
+			get_exif( dialog, file, EXIF_TAG_MAKE, i );
                         break;
                     case EXIF_PROP_APERATURE:
-                        exif_entry  = rstto_file_get_exif ( file, EXIF_TAG_APERTURE_VALUE);
-                        if (NULL != exif_entry)
-                        {
-                            exif_entry_get_value (exif_entry, exif_data, EXIF_DATA_BUFFER_SIZE);
-                            exif_ifd = exif_entry_get_ifd (exif_entry);
-                            exif_title = exif_tag_get_title_in_ifd (
-                                    EXIF_TAG_APERTURE_VALUE,
-                                    exif_ifd);
-                            label_string = g_strdup_printf(_("<b>%s</b>"), exif_title);
-                        }
+			get_exif( dialog, file, EXIF_TAG_APERTURE_VALUE, i );
                         break;
                     default:
                         break;
-                }
-                exif_label = gtk_label_new (NULL);
-                exif_content_label = gtk_label_new (NULL);
-                gtk_label_set_markup (
-                        GTK_LABEL (exif_label),
-                        label_string);
-                gtk_misc_set_alignment (
-                        GTK_MISC (exif_label),
-                        1.0,
-                        0.5);
-                gtk_label_set_text (
-                        GTK_LABEL (exif_content_label),
-                        exif_data
-                        );
-
-                gtk_table_attach (
-                        GTK_TABLE (dialog->priv->image_table),
-                        exif_label,
-                        0,
-                        1,
-                        i,
-                        i+1,
-                        GTK_SHRINK | GTK_FILL,
-                        GTK_SHRINK,
-                        4,
-                        4);
-                gtk_table_attach (
-                        GTK_TABLE (dialog->priv->image_table),
-                        exif_content_label,
-                        1,
-                        2,
-                        i,
-                        i+1,
-                        GTK_EXPAND | GTK_FILL,
-                        GTK_SHRINK,
-                        4,
-                        4);
-                if (NULL != label_string)
-                {
-                    g_free (label_string);
                 }
             }
 
