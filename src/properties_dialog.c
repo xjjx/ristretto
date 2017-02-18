@@ -63,6 +63,8 @@ enum
     EXIF_PROP_MODEL,
     EXIF_PROP_MAKE,
     EXIF_PROP_APERATURE,
+    EXIF_PROP_DESCRIPTION,
+    EXIF_PROP_USER_COMMENT,
     EXIF_PROP_COUNT
 } RsttoExifProp;
 
@@ -590,6 +592,12 @@ properties_dialog_set_file (
                         break;
                     case EXIF_PROP_APERATURE:
 			get_exif( dialog, file, EXIF_TAG_APERTURE_VALUE, i );
+                        break;
+		    case EXIF_PROP_DESCRIPTION:
+			get_exif( dialog, file, EXIF_TAG_IMAGE_DESCRIPTION, i );
+                        break;
+		    case EXIF_PROP_USER_COMMENT:
+			get_exif( dialog, file, EXIF_TAG_USER_COMMENT, i );
                         break;
                     default:
                         break;
